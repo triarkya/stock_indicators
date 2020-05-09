@@ -30,3 +30,22 @@ class StockDf:
         self.df["ma_" + indicator + "_" + str(interval)] = list(
             values_to_avg(self.df[indicator], interval)
         )
+
+    # calculates volume weighted moving average for an indicator (close by default)
+    # and time interval (14 steps by default)
+    def set_vwma(self, indicator="close", interval=14):
+        vwma = []
+        pv = []
+        for i in range(len(self.df)):
+            pv.append(self.df[indicator][i] * self.df["volume"][i])
+            if i // interval == 0:
+                if sum(self.df["volume"][:i + 1]) == 0:
+                    vwma.append(self.df[indicator][i])
+                else:
+                    vwma.append(sum(pv) / sum(self.df["volume"][:i + 1]))
+            else:
+                if sum(self.df["volume"][i - interval:i + 1]) == 0:
+                    vwma.append(self.df[indicator][i])
+                else:
+                    vwma.append(sum(pv[i - interval:i + 1]) / sum(self.df["volume"][i - interval:i + 1]))
+        self.df["vwma_" + indicator + "_" + str(interval)] = vwma
