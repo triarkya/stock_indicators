@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 
 # calculates the average of values for a specififc subinterval from a list of numeric values
@@ -84,3 +85,70 @@ class StockDf:
                 money_flow_index.append(typical_price[k])
 
         self.df["mfi_" + str(interval)] = money_flow_index
+
+    # calculates relative vigor index (+ relative vigor index signal)
+    def set_rvgi(self, interval=10):
+        close_open = list(self.df['close'] - self.df['open'])
+        high_low = list(self.df['high'] - self.df['low'])
+        numerator = np.array([])
+        denominator = np.array([])
+        for i in range(len(close_open)):
+            if i >= 3:
+                numerator = np.append(
+                    numerator,
+                    (close_open[i] + 2 * close_open[i - 1] + 2 * close_open[i - 2] + close_open[
+                        i - 3]) / 6
+                )
+                denominator = np.append(
+                    denominator,
+                    (high_low[i] + 2 * high_low[i - 1] + 2 * high_low[i - 2] + high_low[i - 3]) / 6
+                )
+            elif i == 2:
+                numerator = np.append(
+                    numerator,
+                    (close_open[i] + 2 * close_open[i - 1] + 2 * close_open[i - 2]) / 5
+                )
+                denominator = np.append(
+                    denominator,
+                    (high_low[i] + 2 * high_low[i - 1] + 2 * high_low[i - 2]) / 5
+                )
+            elif i == 1:
+                numerator = np.append(
+                    numerator,
+                    (close_open[i] + 2 * close_open[i - 1]) / 3
+                )
+                denominator = np.append(
+                    denominator,
+                    (high_low[i] + 2 * high_low[i - 1]) / 3
+                )
+            elif i == 0:
+                numerator = np.append(
+                    numerator,
+                    close_open[i]
+                )
+                denominator = np.append(
+                    denominator,
+                    high_low[i]
+                )
+        rvi = list(values_to_avg(numerator / denominator, interval))
+        rvi_signal = []
+
+        for i in range(len(rvi)):
+            if i >= 3:
+                rvi_signal.append(
+                    (rvi[i] + 2 * rvi[i - 1] + 2 * rvi[i - 2] + rvi[i - 3]) / 6
+                )
+            elif i == 2:
+                rvi_signal.append(
+                    (rvi[i] + 2 * rvi[i - 1] + 2 * rvi[i - 2]) / 5
+                )
+            elif i == 1:
+                rvi_signal.append(
+                    (rvi[i] + 2 * rvi[i - 1]) / 3
+                )
+            elif i == 0:
+                rvi_signal.append(
+                    rvi[i]
+                )
+        self.df['rvgi'] = rvi
+        self.df['rvgi_signal'] = rvi_signal
