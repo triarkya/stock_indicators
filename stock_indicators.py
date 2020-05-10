@@ -49,3 +49,38 @@ class StockDf:
                 else:
                     vwma.append(sum(pv[i - interval:i + 1]) / sum(self.df["volume"][i - interval:i + 1]))
         self.df["vwma_" + indicator + "_" + str(interval)] = vwma
+
+    # calculates money flow index
+    # time interval by default 14 steps
+    def set_mfi(self, interval=14):
+        high = self.df["high"].to_numpy()
+        low = self.df["low"].to_numpy()
+        close = self.df["close"].to_numpy()
+        volume = self.df["volume"].to_numpy()
+
+        typical_price = list(
+            (close + high + low) / 3
+        )
+
+        raw_money_flow = [typical_price[0] * volume[0]]
+        for j in range(1, len(close)):
+            raw_money_flow.append(
+                typical_price[j] * volume[j] if typical_price[j - 1] < typical_price[j] else typical_price[j] * volume[
+                    j] * -1
+            )
+
+        money_flow_index = (interval - 1) * [0]
+        for k in range(interval, len(close) + 1):
+            pos_sum = sum(
+                [pos_flow for pos_flow in raw_money_flow[k - interval:k] if pos_flow >= 0]
+            )
+            neg_sum = sum(
+                [neg_flow for neg_flow in raw_money_flow[k - interval:k] if neg_flow < 0]
+            ) * -1
+
+            if pos_sum + neg_sum > 0:
+                money_flow_index.append(100 * pos_sum / (pos_sum + neg_sum))
+            else:
+                money_flow_index.append(typical_price[k])
+
+        self.df["mfi_" + str(interval)] = money_flow_index
