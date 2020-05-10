@@ -50,6 +50,19 @@ class StockDf:
             values_to_avg(self.df[indicator], interval)
         )
 
+    # calculates exponential moving average for an indicator (close by default)
+    # and time interval (10 steps by default)
+    def calc_ema(self, indicator="close", interval=10):
+        ema = [self.df["close"][0]]
+        multiplier = 2 / (interval + 1)
+        for i in range(1, len(self.df)):
+            ema.append(self.df["close"][i] * multiplier + ema[i-1] * (1 - multiplier))
+        return ema
+
+    # save calculated ema in dataframe
+    def set_ema(self, indicator="close", interval=10):
+        self.df["ema_" + indicator + "_" + str(interval)] = self.calc_ema(indicator, interval)
+
     # calculates volume weighted moving average for an indicator (close by default)
     # and time interval (14 steps by default)
     def set_vwma(self, indicator="close", interval=14):
@@ -68,6 +81,15 @@ class StockDf:
                 else:
                     vwma.append(sum(pv[i - interval:i + 1]) / sum(self.df["volume"][i - interval:i + 1]))
         self.df["vwma_" + indicator + "_" + str(interval)] = vwma
+
+    # calculates moving average convergence divergence
+    # by default using ema_close_12 and ema_close_26
+    def set_macd(self):
+        macd = np.array(self.calc_ema("close", 12)) - np.array(self.calc_ema("close", 26))
+        self.df["macd"] = macd
+        macd_signal = self.calc_ema("macd", 9)
+        self.df["macds"] = macd_signal
+        self.df["macdh"] = self.df["macd"] - self.df["macds"]
 
     # calculates money flow index
     # time interval by default 14 steps
