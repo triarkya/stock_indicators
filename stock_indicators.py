@@ -34,6 +34,7 @@ class StockDf:
         true_range = [0.0]
         for i in range(1, len(self.df)):
             true_range.append(max([high[i] - low[i], abs(high[i] - close[i-1]), abs(low[i] - close[i-1])]))
+        self.df["tr_" + str(interval)] = true_range
         self.df["atr_" + str(interval)] = list(values_to_avg(true_range, interval))
 
     # calculates the percentage of average true range compared to close price
@@ -53,10 +54,10 @@ class StockDf:
     # calculates exponential moving average for an indicator (close by default)
     # and time interval (10 steps by default)
     def calc_ema(self, indicator="close", interval=10):
-        ema = [self.df["close"][0]]
+        ema = [self.df[indicator][0]]
         multiplier = 2 / (interval + 1)
         for i in range(1, len(self.df)):
-            ema.append(self.df["close"][i] * multiplier + ema[i-1] * (1 - multiplier))
+            ema.append(self.df[indicator][i] * multiplier + ema[i-1] * (1 - multiplier))
         return ema
 
     # save calculated ema in dataframe
@@ -90,6 +91,36 @@ class StockDf:
         macd_signal = self.calc_ema("macd", 9)
         self.df["macds"] = macd_signal
         self.df["macdh"] = self.df["macd"] - self.df["macds"]
+
+    # calculates average directional index
+    # time interval by default 14 steps
+    def set_adx(self, interval=14):
+        if "atr_" + str(interval) not in self.df.columns:
+            self.set_atr(interval)
+        atr = self.df["atr_" + str(interval)].tolist()
+        pdm = [0.0]
+        ndm = [0.0]
+        pdm_smooth = [0.0]
+        ndm_smooth = [0.0]
+        pdi = [0.0]
+        ndi = [0.0]
+        dx = [0.0]
+        adx = [0.0]
+        multiplier = 2 / (interval + 1)
+        for i in range(1, len(self.df)):
+            move_high = self.df["high"][i] - self.df["high"][i-1]
+            move_low = self.df["low"][i-1] - self.df["low"][i]
+            pdm.append(move_high if 0 < move_high > move_low else 0)
+            ndm.append(move_low if 0 < move_low > move_high else 0)
+            pdm_smooth.append(pdm[i] * multiplier + pdm_smooth[i - 1] * (1 - multiplier))
+            ndm_smooth.append(ndm[i] * multiplier + ndm_smooth[i - 1] * (1 - multiplier))
+            pdi.append(100 * pdm_smooth[i] / atr[i])
+            ndi.append(100 * ndm_smooth[i] / atr[i])
+            dx.append(100 * abs(pdi[i] - ndi[i]) / abs(pdi[i] + ndi[i]))
+            adx.append(dx[i] * multiplier + adx[i - 1] * (1 - multiplier))
+        self.df["adx_" + str(interval)] = adx
+        self.df["pdi_" + str(interval)] = pdi
+        self.df["ndi_" + str(interval)] = ndi
 
     # calculates money flow index
     # time interval by default 14 steps

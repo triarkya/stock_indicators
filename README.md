@@ -8,5 +8,6 @@ supported indicators:
 - Exponential Moving Average (EMA)
 - Volume Weighted Moving Average (VWMA)
 - Moving Average Convergence Divergence (MACD)
+- Average Directional Index (ADX, -DI, +DI)
 - Relative Vigor Index
 - Supertrend
